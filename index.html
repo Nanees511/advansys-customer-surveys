@@ -1,123 +1,68 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Advansys Mechanical Project Survey</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Advansys Client Satisfaction Survey</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <main class="page-shell">
-    <section class="hero">
+  <div class="page-shell">
+    <header class="hero">
+      <div class="hero-glow"></div>
       <div class="hero-content">
-        <div class="eyebrow">CLIENT EXPERIENCE · MECHANICAL PROJECT SURVEY</div>
-        <h1>Client Satisfaction Survey</h1>
-        <p>Your feedback helps us improve delivery, quality, agility, and information security practices.</p>
+        <div class="eyebrow" id="surveyCategory">CLIENT EXPERIENCE</div>
+        <h1 id="surveyTitle">Client Satisfaction Survey</h1>
+        <p id="surveySubtitle">Your feedback helps us deliver better outcomes — takes ~3 minutes</p>
       </div>
-    </section>
+      <div class="wave"></div>
+    </header>
 
-    <form id="surveyForm" class="survey-card" novalidate>
-      <input type="hidden" id="surveyToken" name="surveyToken" />
-      <input type="hidden" id="surveyType" name="surveyType" value="Mechanical Project" />
-
-      <div class="form-grid intro-grid">
-        <div class="field-card">
-          <label for="contactName">Full Name <span>*</span></label>
-          <input id="contactName" name="contactName" type="text" placeholder="e.g. Ahmed Hassan" required />
+    <main class="container">
+      <section class="meta-card" id="metaCard">
+        <div class="meta-item">
+          <span class="meta-label">Client</span>
+          <span class="meta-value" id="clientName">Loading…</span>
         </div>
-
-        <div class="field-card">
-          <label for="companyName">Company <span>*</span></label>
-          <input id="companyName" name="companyName" type="text" placeholder="e.g. Gulf Industries LLC" required />
+        <div class="meta-item">
+          <span class="meta-label">Project</span>
+          <span class="meta-value" id="projectName">Loading…</span>
         </div>
-
-        <div class="field-card readonly-block">
-          <label for="serviceUsed">Advansys Service</label>
-          <input id="serviceUsed" name="serviceUsed" type="text" value="Mechanical Project" readonly />
+        <div class="meta-item" id="engineerMeta">
+          <span class="meta-label">Engineer</span>
+          <span class="meta-value" id="engineerName">Loading…</span>
         </div>
-
-        <div class="field-card readonly-block">
-          <label for="projectName">Project / Reference</label>
-          <input id="projectName" name="projectName" type="text" value="" placeholder="Loaded from survey link" readonly />
+        <div class="meta-item">
+          <span class="meta-label">Reference</span>
+          <span class="meta-value" id="referenceId">Secure token detected</span>
         </div>
-      </div>
-
-      <section class="question-card nps-card">
-        <label class="question-title">1. Based on your most recent experience, how likely is it that you would recommend Advansys service to others? <span>*</span></label>
-        <div class="scale nps-scale" data-name="recommendationScore" data-required="true" data-min="0" data-max="10"></div>
-        <div class="scale-caption"><span>Not at all likely</span><span>Extremely likely</span></div>
       </section>
 
-      <section class="form-grid two-col">
-        <div class="question-card">
-          <label class="question-title">2. Do you think Advansys are following good information security practices through project implementation? <span>*</span></label>
-          <div class="scale" data-name="infoSecurityPractices" data-required="true" data-min="1" data-max="4"></div>
-          <div class="scale-caption"><span>Poor</span><span>Excellent</span></div>
-        </div>
+      <section class="status-card hidden" id="statusCard"></section>
 
-        <div class="question-card">
-          <label class="question-title">3. Do you have any information security incidents you have witnessed? <span>*</span></label>
-          <div class="choice-group" data-name="hasSecurityIncident" data-required="true">
-            <button type="button" class="choice" data-value="Yes">Yes</button>
-            <button type="button" class="choice" data-value="No">No</button>
+      <form id="surveyForm" class="survey-form">
+        <input type="hidden" id="token" name="token" />
+        <input type="hidden" id="surveyType" name="surveyType" />
+        <div id="questionGrid" class="question-grid"></div>
+
+        <div class="footer-bar">
+          <div>
+            <div class="progress-dots" id="progressDots"></div>
+            <div class="progress-label" id="progressLabel">Required questions pending</div>
           </div>
+          <button type="submit" class="primary-btn" id="submitBtn">Submit feedback →</button>
         </div>
+      </form>
+
+      <section class="thank-you hidden" id="thankYou">
+        <div class="success-icon">✓</div>
+        <h2>Thank you for your feedback</h2>
+        <p>Your response has been submitted successfully.</p>
       </section>
+    </main>
+  </div>
 
-      <section id="incidentDetailsWrap" class="question-card hidden">
-        <label for="securityIncidentDetails" class="question-title">4. Please state the information security incidents</label>
-        <textarea id="securityIncidentDetails" name="securityIncidentDetails" rows="4" placeholder="Please describe the incident(s) you witnessed..."></textarea>
-      </section>
-
-      <section class="form-grid three-col">
-        <div class="question-card">
-          <label class="question-title">5. Overall, how satisfied are you with Advansys Quality? <span>*</span></label>
-          <div class="scale" data-name="qualitySatisfaction" data-required="true" data-min="1" data-max="4"></div>
-        </div>
-
-        <div class="question-card">
-          <label class="question-title">6. Overall, how satisfied are you with Advansys Delivery? <span>*</span></label>
-          <div class="scale" data-name="deliverySatisfaction" data-required="true" data-min="1" data-max="4"></div>
-        </div>
-
-        <div class="question-card">
-          <label class="question-title">7. Overall, how satisfied are you with Advansys Agility? <span>*</span></label>
-          <p class="helper-text">Response to changes in customer demand, including a reasonable explanation if changes were not done.</p>
-          <div class="scale" data-name="agilitySatisfaction" data-required="true" data-min="1" data-max="4"></div>
-        </div>
-      </section>
-
-      <section class="form-grid two-col">
-        <div class="question-card">
-          <label for="increaseValue" class="question-title">8. What is one thing Advansys could be doing differently to increase the value of our services to you?</label>
-          <textarea id="increaseValue" name="increaseValue" rows="5" placeholder="Share your suggestion..."></textarea>
-        </div>
-
-        <div class="question-card">
-          <label for="continueDoing" class="question-title">9. What is one thing you think Advansys should continue doing?</label>
-          <textarea id="continueDoing" name="continueDoing" rows="5" placeholder="Tell us what is working well..."></textarea>
-        </div>
-      </section>
-
-      <section class="question-card">
-        <label for="additionalComments" class="question-title">10. Finally, we would like to know if you have any additional comments that you think Advansys should be aware of.</label>
-        <textarea id="additionalComments" name="additionalComments" rows="5" placeholder="Any additional comments..."></textarea>
-      </section>
-
-      <div id="errorBox" class="error-box hidden"></div>
-
-      <div class="actions">
-        <button type="submit" id="submitBtn">Submit Feedback</button>
-      </div>
-    </form>
-
-    <section id="thankYou" class="thank-you hidden">
-      <div class="checkmark">✓</div>
-      <h2>Thank you for your feedback.</h2>
-      <p>Your response has been submitted successfully.</p>
-    </section>
-  </main>
-
+  <script src="survey-config.js"></script>
   <script src="script.js"></script>
 </body>
 </html>

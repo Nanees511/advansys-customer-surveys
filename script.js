@@ -57,13 +57,12 @@ function applyHeader() {
   el("surveyCategory").textContent = `${activeSurvey.category} · ${activeSurvey.quarter}`;
   el("surveyTitle").textContent = activeSurvey.title;
   el("surveySubtitle").textContent = activeSurvey.context === "engineer"
-    ? "Your feedback helps us develop stronger delivery teams — takes ~3 minutes"
-    : "Your feedback helps us deliver better outcomes — takes ~3 minutes";
+    ? "Your feedback helps us improve delivery — takes about 3 minutes"
+    : "Your feedback helps us improve delivery — takes about 3 minutes";
 
   el("clientName").textContent = metadata.clientName || "—";
   el("projectName").textContent = metadata.projectName || "—";
   el("engineerName").textContent = metadata.engineerName || "—";
-  el("referenceId").textContent = metadata.referenceId || "Secure token detected";
   el("engineerMeta").style.display = activeSurvey.context === "engineer" ? "block" : "none";
   el("token").value = metadata.token || "";
   el("surveyType").value = metadata.surveyType;

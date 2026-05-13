@@ -141,7 +141,7 @@ async function loadSurvey() {
     console.log("Survey Data:", surveyData);
 
     // COMPLETED SURVEY
-    if (!surveyData.success && surveyData.completed) {
+    if (!surveyData.success && (surveyData.completed || surveyData.locked)) {
 
       el("surveyForm").style.display = "none";
       el("metaCard").style.display = "none";

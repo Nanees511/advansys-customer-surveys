@@ -6,62 +6,101 @@
   <title>Advansys Client Satisfaction Survey</title>
   <link rel="stylesheet" href="style.css" />
 </head>
+
 <body>
   <div class="page-shell">
+
     <header class="hero">
       <div class="hero-content">
-        <div class="eyebrow" id="surveyCategory">CLIENT EXPERIENCE</div>
-        <h1 id="surveyTitle">Client Satisfaction Survey</h1>
-        <p id="surveySubtitle">Your feedback helps us deliver better outcomes — takes ~3 minutes</p>
+        <div class="eyebrow" id="surveyCategory">
+          CLIENT EXPERIENCE
+        </div>
+
+        <h1 id="surveyTitle">
+          Customer Satisfaction Survey
+        </h1>
+
+        <p id="surveySubtitle">
+          Your feedback helps us improve our services.
+        </p>
       </div>
+
       <div class="wave"></div>
     </header>
 
     <main class="container">
+
+      <!-- META -->
       <section class="meta-card" id="metaCard">
+
         <div class="meta-item">
           <span class="meta-label">Client</span>
-          <span class="meta-value" id="clientName">Loading…</span>
+          <span class="meta-value" id="clientName">Loading...</span>
         </div>
+
         <div class="meta-item">
           <span class="meta-label">Project</span>
-          <span class="meta-value" id="projectName">Loading…</span>
+          <span class="meta-value" id="projectName">Loading...</span>
         </div>
+
         <div class="meta-item" id="engineerMeta">
           <span class="meta-label">Engineer</span>
-          <span class="meta-value" id="engineerName">Loading…</span>
+          <span class="meta-value" id="engineerName">Loading...</span>
         </div>
-        <div class="meta-item reference-meta hidden">
-          <span class="meta-label">Reference</span>
-          <span class="meta-value" id="referenceId">Secure token detected</span>
-        </div>
+
       </section>
 
+      <!-- STATUS -->
       <section class="status-card hidden" id="statusCard"></section>
 
+      <!-- FORM -->
       <form id="surveyForm" class="survey-form">
+
         <input type="hidden" id="token" name="token" />
         <input type="hidden" id="surveyType" name="surveyType" />
+
+        <!-- QUESTIONS -->
         <div id="questionGrid" class="question-grid"></div>
 
+        <!-- FOOTER -->
         <div class="footer-bar">
-          <div>
+
+          <div class="progress-wrapper">
             <div class="progress-dots" id="progressDots"></div>
-            <div class="progress-label" id="progressLabel">Required questions pending</div>
+
+            <div class="progress-label" id="progressLabel">
+              Required questions pending
+            </div>
           </div>
-          <button type="submit" class="primary-btn" id="submitBtn">Submit feedback →</button>
+
+          <button type="submit" class="primary-btn" id="submitBtn">
+            Submit feedback →
+          </button>
+
         </div>
+
       </form>
 
+      <!-- THANK YOU -->
       <section class="thank-you hidden" id="thankYou">
+
         <div class="success-icon">✓</div>
-        <h2>Thank you for your feedback</h2>
-        <p>Your response has been submitted successfully.</p>
+
+        <h2>
+          Thank you for your feedback
+        </h2>
+
+        <p>
+          Your response has been submitted successfully.
+        </p>
+
       </section>
+
     </main>
   </div>
 
-  <script src="survey-config.js"></script>
+  <!-- ONLY THIS -->
   <script src="script.js"></script>
+
 </body>
 </html>

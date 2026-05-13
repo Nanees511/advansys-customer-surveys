@@ -89,9 +89,26 @@ async function loadSurvey() {
     surveyData = await res.json();
     console.log("Survey Data:", surveyData);
 
-    if (!surveyData.success) {
-      throw new Error("Invalid survey");
-    }
+   if (!surveyData.success && surveyData.completed) {
+  el("surveyForm").style.display = "none";
+  el("metaCard").style.display = "none";
+  clearStatus();
+
+  const thankYou = el("thankYou");
+  thankYou.classList.remove("hidden");
+
+  thankYou.innerHTML = `
+    <div class="success-icon">✓</div>
+    <h2>Thank You</h2>
+    <p>This survey has already been completed and submitted successfully.</p>
+  `;
+
+  return;
+}
+
+if (!surveyData.success) {
+  throw new Error("Invalid survey");
+}
 
     applyHeader();
     renderSurvey();

@@ -41,11 +41,17 @@ async function loadSurvey() {
   try {
 
     const res = await fetch(
-      `${POWER_AUTOMATE_GET_URL}&token=${encodeURIComponent(token)}`,
-      {
-        method: "POST"
-      }
-    );
+  POWER_AUTOMATE_GET_URL,
+  {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      token: token
+    })
+  }
+);
 
     if (!res.ok) {
       throw new Error(`Flow failed ${res.status}`);

@@ -6,19 +6,49 @@ const POWER_AUTOMATE_POST_URL =
 
 const params = new URLSearchParams(window.location.search);
 const token = params.get("token") || "";
-
 const el = (id) => document.getElementById(id);
 
 let surveyData = null;
 
+function getValue(obj, keys, fallback = "") {
+  for (const key of keys) {
+    if (obj && obj[key] !== undefined && obj[key] !== null) {
+      if (typeof obj[key] === "object" && obj[key].Value !== undefined) {
+        return obj[key].Value;
+      }
+      return obj[key];
+    }
+  }
+  return fallback;
+}
+
+function getQuestionId(q) {
+  return getValue(q, ["Question_ID", "Title", "questionId", "id"], "");
+}
+
+function getQuestionText(q) {
+  return getValue(q, ["Question_Text", "field_7", "questionText", "label"], "");
+}
+
+function getQuestionType(q) {
+  return getValue(q, ["Question_Type", "field_8", "type"], "Text");
+}
+
+function getQuestionRole(q) {
+  return getValue(q, ["Question_Role", "field_9", "role"], "");
+}
+
+function isRequired(q) {
+  const val = getValue(q, ["Required", "Is_Required", "required"], "Yes");
+  return String(val).toLowerCase() !== "no";
+}
+
 function setStatus(message, isError = true) {
   const card = el("statusCard");
-
   if (!card) return;
 
   card.textContent = message;
   card.classList.remove("hidden");
-
   card.style.color = isError ? "#b42318" : "#0f8f5f";
   card.style.background = isError ? "#fff7f6" : "#f1fff8";
   card.style.borderColor = isError ? "#ffd6d2" : "#b8efd6";
@@ -26,39 +56,29 @@ function setStatus(message, isError = true) {
 
 function clearStatus() {
   const card = el("statusCard");
-  if (card) {
-    card.classList.add("hidden");
-  }
+  if (card) card.classList.add("hidden");
 }
 
 async function loadSurvey() {
-
   if (!token) {
     setStatus("Missing survey token.");
     return;
   }
 
   try {
-
-    const res = await fetch(
-  POWER_AUTOMATE_GET_URL,
-  {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      token: token
-    })
-  }
-);
+    const res = await fetch(POWER_AUTOMATE_GET_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ token })
+    });
 
     if (!res.ok) {
       throw new Error(`Flow failed ${res.status}`);
     }
 
     surveyData = await res.json();
-
     console.log("Survey Data:", surveyData);
 
     if (!surveyData.success) {
@@ -67,138 +87,104 @@ async function loadSurvey() {
 
     applyHeader();
     renderSurvey();
-
   } catch (err) {
-
     console.error(err);
-
-    setStatus(
-      "Unable to load survey. The link may be invalid or expired."
-    );
+    setStatus("Unable to load survey. The link may be invalid or expired.");
   }
 }
 
 function applyHeader() {
-
   el("surveyTitle").textContent =
     surveyData.formName || "Customer Satisfaction Survey";
 
   el("surveySubtitle").textContent =
     "Your feedback helps us improve our services.";
 
-  el("clientName").textContent =
-    surveyData.clientName || "—";
-
-  el("projectName").textContent =
-    surveyData.projectName || "—";
+  el("clientName").textContent = surveyData.clientName || "—";
+  el("projectName").textContent = surveyData.projectName || "—";
 
   const engineerMeta = el("engineerMeta");
 
   if (surveyData.engineerName && engineerMeta) {
-
     engineerMeta.style.display = "block";
-
-    el("engineerName").textContent =
-      surveyData.engineerName;
-
+    el("engineerName").textContent = surveyData.engineerName;
   } else if (engineerMeta) {
-
     engineerMeta.style.display = "none";
   }
 
-  el("token").value = token;
+  if (el("token")) {
+    el("token").value = token;
+  }
 }
 
 function makeFieldName(q) {
-  return q.Question_ID || q.questionId;
+  return getQuestionId(q);
 }
 
 function renderQuestion(q) {
+  const type = String(getQuestionType(q)).trim().toLowerCase();
+  const label = getQuestionText(q);
+  const role = String(getQuestionRole(q)).trim().toLowerCase();
 
-  const type =
-    q.Question_Type?.Value ||
-    q.Question_Type ||
-    "Text";
-
-  const label =
-    q.Question_Text ||
-    q.questionText ||
-    "";
-
-  const role =
-    q.Question_Role ||
-    "";
-
-  if (role === "Prefill") {
+  if (role === "prefill" || type === "prefill / metadata") {
     return null;
   }
 
   const card = document.createElement("section");
+  const wide = type === "nps" || type === "text" || label.length > 150;
 
-  card.className = "question-card";
-
+  card.className = `question-card ${wide ? "wide" : ""}`;
   card.dataset.question = makeFieldName(q);
 
   const title = document.createElement("h3");
-
   title.className = "question-title";
-
-  title.innerHTML = label;
-
+  title.innerHTML = `${label}${isRequired(q) ? ' <span class="required">*</span>' : ""}`;
   card.appendChild(title);
 
-  if (type === "NPS") {
-
+  if (type === "nps") {
     const scale = document.createElement("div");
-
     scale.className = "scale nps";
 
     for (let i = 0; i <= 10; i++) {
-      scale.appendChild(
-        makeRadio(q, i, String(i))
-      );
+      scale.appendChild(makeRadio(q, i, String(i)));
     }
 
     card.appendChild(scale);
 
-  } else if (type === "Numeric") {
+    const labels = document.createElement("div");
+    labels.className = "scale-labels";
+    labels.innerHTML = "<span>Not at all likely</span><span>Extremely likely</span>";
+    card.appendChild(labels);
 
+  } else if (type === "numeric") {
     const scale = document.createElement("div");
-
     scale.className = "scale rating4";
 
     for (let i = 1; i <= 4; i++) {
-      scale.appendChild(
-        makeRadio(q, i, String(i))
-      );
+      scale.appendChild(makeRadio(q, i, String(i)));
     }
 
     card.appendChild(scale);
 
-  } else if (type === "Yes/No") {
-
+  } else if (type === "yes/no" || type === "yesno") {
     const scale = document.createElement("div");
-
     scale.className = "scale yesno";
 
-    scale.appendChild(
-      makeRadio(q, "Yes", "Yes")
-    );
-
-    scale.appendChild(
-      makeRadio(q, "No", "No")
-    );
+    scale.appendChild(makeRadio(q, "Yes", "Yes"));
+    scale.appendChild(makeRadio(q, "No", "No"));
 
     card.appendChild(scale);
 
   } else {
-
     const textarea = document.createElement("textarea");
 
     textarea.name = makeFieldName(q);
+    textarea.placeholder = "Type your answer here…";
+    textarea.dataset.label = label;
 
-    textarea.placeholder =
-      "Type your answer here...";
+    if (isRequired(q)) {
+      textarea.required = true;
+    }
 
     card.appendChild(textarea);
   }
@@ -207,90 +193,68 @@ function renderQuestion(q) {
 }
 
 function makeRadio(q, value, text) {
-
   const label = document.createElement("label");
-
   label.className = "option";
 
   const input = document.createElement("input");
-
   input.type = "radio";
-
   input.name = makeFieldName(q);
-
   input.value = value;
+  input.dataset.label = getQuestionText(q);
+
+  if (isRequired(q)) {
+    input.required = true;
+  }
 
   const span = document.createElement("span");
-
   span.textContent = text;
 
   label.appendChild(input);
-
   label.appendChild(span);
 
   return label;
 }
 
 function renderSurvey() {
-
   const grid = el("questionGrid");
-
   grid.innerHTML = "";
 
   const questions = surveyData.questions || [];
 
   questions.forEach((q) => {
-
     const rendered = renderQuestion(q);
-
-    if (rendered) {
-      grid.appendChild(rendered);
-    }
+    if (rendered) grid.appendChild(rendered);
   });
+
+  if (!questions.length) {
+    setStatus("No active questions were found for this survey type.");
+  }
 }
 
 function collectResponses() {
-
   const responses = [];
-
   const questions = surveyData.questions || [];
 
   questions.forEach((q) => {
+    const type = String(getQuestionType(q)).trim().toLowerCase();
+    const role = String(getQuestionRole(q)).trim().toLowerCase();
 
-    const type =
-      q.Question_Type?.Value ||
-      q.Question_Type ||
-      "Text";
-
-    const role =
-      q.Question_Role ||
-      "";
-
-    if (role === "Prefill") return;
+    if (role === "prefill" || type === "prefill / metadata") return;
 
     let value = "";
 
-    if (
-      type === "Text"
-    ) {
-
+    if (type === "text") {
       value =
-        document.querySelector(
-          `[name="${makeFieldName(q)}"]`
-        )?.value || "";
-
+        document.querySelector(`[name="${makeFieldName(q)}"]`)?.value || "";
     } else {
-
       value =
-        document.querySelector(
-          `input[name="${makeFieldName(q)}"]:checked`
-        )?.value || "";
+        document.querySelector(`input[name="${makeFieldName(q)}"]:checked`)?.value || "";
     }
 
     responses.push({
       questionId: makeFieldName(q),
-      question: q.Question_Text,
-      type,
+      question: getQuestionText(q),
+      type: getQuestionType(q),
       value
     });
   });
@@ -299,65 +263,60 @@ function collectResponses() {
     token,
     surveyId: surveyData.surveyId,
     surveyConfigKey: surveyData.surveyConfigKey,
+    batchId: surveyData.batchId,
     clientName: surveyData.clientName,
+    clientEmail: surveyData.clientEmail,
+    projectId: surveyData.projectId,
     projectName: surveyData.projectName,
     engineerName: surveyData.engineerName,
+    engineerEmail: surveyData.engineerEmail,
+    department: surveyData.department,
+    surveyType: surveyData.surveyType,
+    formName: surveyData.formName,
+    reviewQuarter: surveyData.reviewQuarter,
+    reviewYear: surveyData.reviewYear,
     responses
   };
 }
 
 async function submitSurvey(event) {
-
   event.preventDefault();
-
   clearStatus();
+
+  const form = el("surveyForm");
+  if (form && !form.reportValidity()) return;
 
   const payload = collectResponses();
 
   try {
-
-    const res = await fetch(
-      POWER_AUTOMATE_POST_URL,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(payload)
-      }
-    );
+    const res = await fetch(POWER_AUTOMATE_POST_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
 
     if (!res.ok) {
       throw new Error("Submit failed");
     }
 
     el("surveyForm").style.display = "none";
-
     el("thankYou").classList.remove("hidden");
 
     window.scrollTo({
       top: 0,
       behavior: "smooth"
     });
-
   } catch (err) {
-
     console.error(err);
-
-    setStatus(
-      "Submission failed. Please try again."
-    );
+    setStatus("Submission failed. Please try again.");
   }
 }
 
 (async function init() {
-
   await loadSurvey();
 
   el("surveyForm")
-    ?.addEventListener(
-      "submit",
-      submitSurvey
-    );
-
+    ?.addEventListener("submit", submitSurvey);
 })();

@@ -12,7 +12,7 @@ let surveyData = null;
 
 function getValue(obj, keys, fallback = "") {
   for (const key of keys) {
-    if (obj && obj[key] !== undefined && obj[key] !== null) {
+    if (obj && obj[key] !== undefined && obj[key] !== null && obj[key] !== "") {
       if (typeof obj[key] === "object" && obj[key].Value !== undefined) {
         return obj[key].Value;
       }
@@ -20,6 +20,10 @@ function getValue(obj, keys, fallback = "") {
     }
   }
   return fallback;
+}
+
+function surveyVal(keys, fallback = "") {
+  return getValue(surveyData || {}, keys, fallback);
 }
 
 function getQuestionId(q) {
@@ -91,6 +95,8 @@ async function loadSurvey() {
 
     applyHeader();
     renderSurvey();
+    setupConditionalQuestions();
+    updateProgress();
   } catch (err) {
     console.error(err);
     setStatus("Unable to load survey. The link may be invalid or expired.");
@@ -98,26 +104,47 @@ async function loadSurvey() {
 }
 
 function applyHeader() {
-  el("surveyTitle").textContent =
-    surveyData.formName || "Customer Satisfaction Survey";
+  const formName = surveyVal(
+    ["formName", "Form_Name", "field_11"],
+    "Customer Satisfaction Survey"
+  );
 
-  el("surveySubtitle").textContent =
-    "Your feedback helps us improve our services.";
+  const clientName = surveyVal(
+    ["clientName", "Client_Name", "field_3"],
+    "—"
+  );
 
-  el("clientName").textContent = surveyData.clientName || "—";
-  el("projectName").textContent = surveyData.projectName || "—";
+  const projectName = surveyVal(
+    ["projectName", "Project_Name", "field_6"],
+    "—"
+  );
+
+  const engineerName = surveyVal(
+    ["engineerName", "Engineer_Name", "field_7"],
+    ""
+  );
+
+  el("surveyTitle").textContent = formName;
+  el("surveySubtitle").textContent = "Your feedback helps us improve our services.";
+
+  el("clientName").textContent = clientName || "—";
+  el("projectName").textContent = projectName || "—";
 
   const engineerMeta = el("engineerMeta");
 
-  if (surveyData.engineerName && engineerMeta) {
+  if (engineerName && engineerMeta) {
     engineerMeta.style.display = "block";
-    el("engineerName").textContent = surveyData.engineerName;
+    el("engineerName").textContent = engineerName;
   } else if (engineerMeta) {
     engineerMeta.style.display = "none";
   }
 
   if (el("token")) {
     el("token").value = token;
+  }
+
+  if (el("surveyType")) {
+    el("surveyType").value = surveyVal(["surveyType", "Survey_Scope", "field_10"], "");
   }
 }
 
@@ -145,6 +172,8 @@ function renderQuestion(q) {
 
   card.className = `question-card ${wide ? "wide" : ""}`;
   card.dataset.question = makeFieldName(q);
+  card.dataset.questionText = label.toLowerCase();
+  card.dataset.questionType = type;
 
   const title = document.createElement("h3");
   title.className = "question-title";
@@ -195,6 +224,8 @@ function renderQuestion(q) {
     if (isRequired(q)) {
       textarea.required = true;
     }
+
+    textarea.addEventListener("input", updateProgress);
 
     card.appendChild(textarea);
   }
@@ -266,6 +297,11 @@ function makeRadio(q, value, text) {
     input.required = true;
   }
 
+  input.addEventListener("change", () => {
+    handleConditionalQuestions();
+    updateProgress();
+  });
+
   const span = document.createElement("span");
   span.textContent = text;
 
@@ -315,6 +351,118 @@ function renderSurvey() {
   if (!questions.length) {
     setStatus("No active questions were found for this survey type.");
   }
+
+  renderProgressDots();
+}
+
+function renderProgressDots() {
+  const dots = el("progressDots");
+  if (!dots) return;
+
+  dots.innerHTML = "";
+
+  for (let i = 0; i < 4; i++) {
+    const dot = document.createElement("span");
+    dots.appendChild(dot);
+  }
+}
+
+function getVisibleRequiredQuestions() {
+  return [...document.querySelectorAll(".question-card")]
+    .filter(card => {
+      if (card.classList.contains("hidden")) return false;
+
+      const inputs = [...card.querySelectorAll("input, textarea")];
+
+      return inputs.some(input => input.required);
+    });
+}
+
+function isCardAnswered(card) {
+  const radios = [...card.querySelectorAll("input[type='radio']")];
+  const textareas = [...card.querySelectorAll("textarea")];
+
+  if (radios.length) {
+    const names = [...new Set(radios.map(r => r.name))];
+
+    return names.every(name =>
+      !!document.querySelector(`input[name="${name}"]:checked`)
+    );
+  }
+
+  if (textareas.length) {
+    return textareas.every(t => !t.required || !!t.value.trim());
+  }
+
+  return true;
+}
+
+function updateProgress() {
+  const requiredCards = getVisibleRequiredQuestions();
+  const answeredCards = requiredCards.filter(isCardAnswered);
+
+  const label = el("progressLabel");
+  const dots = el("progressDots");
+
+  if (label) {
+    label.textContent =
+      `${answeredCards.length} of ${requiredCards.length} required questions completed`;
+  }
+
+  if (dots) {
+    const pct = requiredCards.length
+      ? answeredCards.length / requiredCards.length
+      : 1;
+
+    const activeDots = Math.ceil(pct * 4);
+
+    [...dots.children].forEach((dot, i) => {
+      dot.className = i < activeDots ? "active" : "";
+    });
+  }
+}
+
+function setupConditionalQuestions() {
+  handleConditionalQuestions();
+}
+
+function handleConditionalQuestions() {
+  const cards = [...document.querySelectorAll(".question-card")];
+
+  const incidentYesNoCard = cards.find(card => {
+    const text = card.dataset.questionText || "";
+    const type = card.dataset.questionType || "";
+    return text.includes("incident") && (type === "yes/no" || type === "yesno");
+  });
+
+  const incidentTextCard = cards.find(card => {
+    const text = card.dataset.questionText || "";
+    const type = card.dataset.questionType || "";
+    return text.includes("incident") && type === "text";
+  });
+
+  if (!incidentYesNoCard || !incidentTextCard) {
+    updateProgress();
+    return;
+  }
+
+  const checked = incidentYesNoCard.querySelector("input[type='radio']:checked");
+  const showText = checked && checked.value === "Yes";
+
+  const textarea = incidentTextCard.querySelector("textarea");
+
+  if (showText) {
+    incidentTextCard.classList.remove("hidden");
+    if (textarea) textarea.required = true;
+  } else {
+    incidentTextCard.classList.add("hidden");
+    if (textarea) {
+      textarea.required = false;
+      textarea.value = "";
+    }
+  }
+
+  updateProgress();
 }
 
 function collectResponses() {
@@ -344,20 +492,20 @@ function collectResponses() {
 
   return {
     token,
-    surveyId: surveyData.surveyId,
-    surveyConfigKey: surveyData.surveyConfigKey,
-    batchId: surveyData.batchId,
-    clientName: surveyData.clientName,
-    clientEmail: surveyData.clientEmail,
-    projectId: surveyData.projectId,
-    projectName: surveyData.projectName,
-    engineerName: surveyData.engineerName,
-    engineerEmail: surveyData.engineerEmail,
-    department: surveyData.department,
-    surveyType: surveyData.surveyType,
-    formName: surveyData.formName,
-    reviewQuarter: surveyData.reviewQuarter,
-    reviewYear: surveyData.reviewYear,
+    surveyId: surveyVal(["surveyId", "Survey_ID", "field_1"], ""),
+    surveyConfigKey: surveyVal(["surveyConfigKey", "Survey_Config_Key"], ""),
+    batchId: surveyVal(["batchId", "Batch_ID", "field_2"], ""),
+    clientName: surveyVal(["clientName", "Client_Name", "field_3"], ""),
+    clientEmail: surveyVal(["clientEmail", "Client_Email", "field_4"], ""),
+    projectId: surveyVal(["projectId", "Project_ID", "field_5"], ""),
+    projectName: surveyVal(["projectName", "Project_Name", "field_6"], ""),
+    engineerName: surveyVal(["engineerName", "Engineer_Name", "field_7"], ""),
+    engineerEmail: surveyVal(["engineerEmail", "Engineer_Email", "field_8"], ""),
+    department: surveyVal(["department", "Department", "field_9"], ""),
+    surveyType: surveyVal(["surveyType", "Survey_Scope", "field_10"], ""),
+    formName: surveyVal(["formName", "Form_Name", "field_11"], ""),
+    reviewQuarter: surveyVal(["reviewQuarter", "Review_Quarter"], ""),
+    reviewYear: surveyVal(["reviewYear", "Review_Year"], ""),
     responses
   };
 }
@@ -365,6 +513,8 @@ function collectResponses() {
 async function submitSurvey(event) {
   event.preventDefault();
   clearStatus();
+
+  handleConditionalQuestions();
 
   const form = el("surveyForm");
   if (form && !form.reportValidity()) return;

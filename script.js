@@ -38,6 +38,10 @@ function getQuestionRole(q) {
   return getValue(q, ["Question_Role", "field_9", "role"], "");
 }
 
+function normalizeType(q) {
+  return String(getQuestionType(q)).trim().toLowerCase();
+}
+
 function isRequired(q) {
   const val = getValue(q, ["Required", "Is_Required", "required"], "Yes");
   return String(val).toLowerCase() !== "no";
@@ -121,12 +125,18 @@ function makeFieldName(q) {
   return getQuestionId(q);
 }
 
-function renderQuestion(q) {
-  const type = String(getQuestionType(q)).trim().toLowerCase();
-  const label = getQuestionText(q);
+function isRenderableQuestion(q) {
+  const type = normalizeType(q);
   const role = String(getQuestionRole(q)).trim().toLowerCase();
 
-  if (role === "prefill" || type === "prefill / metadata") {
+  return !(role === "prefill" || type === "prefill / metadata");
+}
+
+function renderQuestion(q) {
+  const type = normalizeType(q);
+  const label = getQuestionText(q);
+
+  if (!isRenderableQuestion(q)) {
     return null;
   }
 
@@ -192,6 +202,56 @@ function renderQuestion(q) {
   return card;
 }
 
+function renderNumericGrid(group) {
+  const card = document.createElement("section");
+  card.className = "question-card wide rating-grid-card";
+
+  const title = document.createElement("h3");
+  title.className = "question-title";
+  title.textContent = "Please rate the following";
+  card.appendChild(title);
+
+  const table = document.createElement("table");
+  table.className = "rating-grid";
+
+  const thead = document.createElement("thead");
+  thead.innerHTML = `
+    <tr>
+      <th>Question</th>
+      <th>1</th>
+      <th>2</th>
+      <th>3</th>
+      <th>4</th>
+    </tr>
+  `;
+  table.appendChild(thead);
+
+  const tbody = document.createElement("tbody");
+
+  group.forEach((q) => {
+    const row = document.createElement("tr");
+
+    const questionCell = document.createElement("td");
+    questionCell.className = "rating-grid-question";
+    questionCell.innerHTML = `${getQuestionText(q)}${isRequired(q) ? ' <span class="required">*</span>' : ""}`;
+    row.appendChild(questionCell);
+
+    for (let i = 1; i <= 4; i++) {
+      const cell = document.createElement("td");
+      cell.className = "rating-grid-choice";
+      cell.appendChild(makeRadio(q, i, String(i)));
+      row.appendChild(cell);
+    }
+
+    tbody.appendChild(row);
+  });
+
+  table.appendChild(tbody);
+  card.appendChild(table);
+
+  return card;
+}
+
 function makeRadio(q, value, text) {
   const label = document.createElement("label");
   label.className = "option";
@@ -219,12 +279,38 @@ function renderSurvey() {
   const grid = el("questionGrid");
   grid.innerHTML = "";
 
-  const questions = surveyData.questions || [];
+  const questions = (surveyData.questions || []).filter(isRenderableQuestion);
+
+  let numericGroup = [];
+
+  function flushNumericGroup() {
+    if (!numericGroup.length) return;
+
+    if (numericGroup.length >= 2) {
+      grid.appendChild(renderNumericGrid(numericGroup));
+    } else {
+      const rendered = renderQuestion(numericGroup[0]);
+      if (rendered) grid.appendChild(rendered);
+    }
+
+    numericGroup = [];
+  }
 
   questions.forEach((q) => {
+    const type = normalizeType(q);
+
+    if (type === "numeric") {
+      numericGroup.push(q);
+      return;
+    }
+
+    flushNumericGroup();
+
     const rendered = renderQuestion(q);
     if (rendered) grid.appendChild(rendered);
   });
+
+  flushNumericGroup();
 
   if (!questions.length) {
     setStatus("No active questions were found for this survey type.");
@@ -233,13 +319,10 @@ function renderSurvey() {
 
 function collectResponses() {
   const responses = [];
-  const questions = surveyData.questions || [];
+  const questions = (surveyData.questions || []).filter(isRenderableQuestion);
 
   questions.forEach((q) => {
-    const type = String(getQuestionType(q)).trim().toLowerCase();
-    const role = String(getQuestionRole(q)).trim().toLowerCase();
-
-    if (role === "prefill" || type === "prefill / metadata") return;
+    const type = normalizeType(q);
 
     let value = "";
 

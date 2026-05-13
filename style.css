@@ -313,3 +313,68 @@ textarea:focus {
 .rating-grid-choice .option span {
   width: 100%;
 }
+.question-card.hidden {
+  display: none;
+}
+
+.progress-dots {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.progress-dots span {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: #d8e2ef;
+  display: inline-block;
+}
+
+.progress-dots span.active {
+  background: #0b6fae;
+}
+
+.rating-grid-card {
+  overflow-x: auto;
+}
+
+.rating-grid {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.rating-grid th {
+  font-size: 13px;
+  color: #5b6b86;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 12px;
+  border-bottom: 1px solid #d9e2ef;
+}
+
+.rating-grid td {
+  padding: 14px 12px;
+  border-bottom: 1px solid #eef2f7;
+  vertical-align: middle;
+}
+
+.rating-grid-question {
+  width: 65%;
+  font-weight: 600;
+  color: #0f2544;
+}
+
+.rating-grid-choice {
+  text-align: center;
+}
+
+.rating-grid-choice .option {
+  width: 46px;
+  height: 40px;
+  margin: auto;
+}
+
+.rating-grid-choice .option span {
+  width: 100%;
+}

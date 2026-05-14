@@ -807,35 +807,33 @@ function collectResponses() {
     });
   });
 
-    const npsAnswer = responses.find(
+  const npsAnswer = responses.find(
     r => String(r.type).toLowerCase() === "nps"
   );
 
   const npsScore = npsAnswer
     ? Number(npsAnswer.value)
     : null;
-  const npsScore = npsAnswer
-  ? Number(npsAnswer.value)
-  : null;
 
-const numericResponses = responses
-  .filter(r =>
-    String(r.type).toLowerCase() === "numeric" &&
-    r.value !== ""
-  )
-  .map(r => Number(r.value));
+  const numericResponses = responses
+    .filter(r =>
+      String(r.type).toLowerCase() === "numeric" &&
+      r.value !== ""
+    )
+    .map(r => Number(r.value));
 
-const lowestScore =
-  numericResponses.length
-    ? Math.min(...numericResponses)
-    : null;
+  const lowestScore =
+    numericResponses.length
+      ? Math.min(...numericResponses)
+      : null;
 
-const requiresQA =
-  lowestScore !== null &&
-  lowestScore <= 2;
+  const requiresQA =
+    lowestScore !== null &&
+    lowestScore <= 2;
 
   return {
     token,
+
     surveyId:
       surveyVal(
         ["surveyId", "Survey_ID", "field_1"],
@@ -919,9 +917,11 @@ const requiresQA =
         ["reviewYear", "Review_Year"],
         ""
       ),
-     npsScore,
-     lowestScore,
+
+    npsScore,
+    lowestScore,
     requiresQA,
+
     responses
   };
 }

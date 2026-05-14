@@ -807,6 +807,14 @@ function collectResponses() {
     });
   });
 
+    const npsAnswer = responses.find(
+    r => String(r.type).toLowerCase() === "nps"
+  );
+
+  const npsScore = npsAnswer
+    ? Number(npsAnswer.value)
+    : null;
+
   return {
     token,
     surveyId:
@@ -892,7 +900,7 @@ function collectResponses() {
         ["reviewYear", "Review_Year"],
         ""
       ),
-
+     npsScore,
     responses
   };
 }

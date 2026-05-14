@@ -814,6 +814,25 @@ function collectResponses() {
   const npsScore = npsAnswer
     ? Number(npsAnswer.value)
     : null;
+  const npsScore = npsAnswer
+  ? Number(npsAnswer.value)
+  : null;
+
+const numericResponses = responses
+  .filter(r =>
+    String(r.type).toLowerCase() === "numeric" &&
+    r.value !== ""
+  )
+  .map(r => Number(r.value));
+
+const lowestScore =
+  numericResponses.length
+    ? Math.min(...numericResponses)
+    : null;
+
+const requiresQA =
+  lowestScore !== null &&
+  lowestScore <= 2;
 
   return {
     token,
@@ -901,6 +920,8 @@ function collectResponses() {
         ""
       ),
      npsScore,
+     lowestScore,
+    requiresQA,
     responses
   };
 }
